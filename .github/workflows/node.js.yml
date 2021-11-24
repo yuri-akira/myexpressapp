@@ -27,3 +27,23 @@ jobs:
     - run: npm run build --if-present
     - run: npm test
 
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: azure/docker-login@v1
+      with:
+        login-server: akiradeployazure.azurecr.io
+        username: ${{ secrets.REGISTRY_USERNAME }}
+        password: ${{ secrets.REGISTRY_PASSWORD }}
+    - run: |
+        docker build . -t akiradeployazure.azurecr.io/yakiradeploy:${{ github.sha }}
+        docker push akiradeployazure.azurecr.io/yakiradeploy:${{ github.sha }} 
+
+    - uses: azure/webapps-deploy@v2
+      with:
+        app-name: 'yakiradeploy'
+        publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+        images: 'akiradeployazure.azurecr.io/yakiradeploy:${{ github.sha }}' 
+
